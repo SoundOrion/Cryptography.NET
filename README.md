@@ -1,0 +1,2 @@
+# Cryptography.NET
+Cryptography.NETは、AES暗号化とHMAC-SHA256およびHMAC-SHA512メッセージ認証コードを使用した強力な暗号化および復号化機能を提供するC#ライブラリ
