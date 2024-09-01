@@ -29,9 +29,6 @@ internal static class AnagramHelper
     /// </summary>
     /// <param name="input">アナグラム処理された文字列。</param>
     /// <returns>元の文字列。</returns>
-    public static string AnagramRestore(string input)
-    {
-        return AnagramSwap(input);
-    }
+    public static string AnagramRestore(string input) => AnagramSwap(input);
 }
 
