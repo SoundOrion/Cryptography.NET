@@ -73,10 +73,6 @@ public class AesEncryptionHelper
         for (int i = 1; i < passwords.Length; i++)
         {
             var encryptedText = Convert.ToBase64String(encryptedData);
-
-            // アナグラム処理
-            encryptedText = AnagramHelper.AnagramSwap(encryptedText);
-
             byte[] key = DeriveKey(passwords[i], salt, hashAlgorithm);
             encryptedData = EncryptAes(encryptedText, key, iv);
         }
@@ -125,10 +121,6 @@ public class AesEncryptionHelper
             var password = passwords[i];
             byte[] key = DeriveKey(password, salt, hashAlgorithm);
             string decryptedIntermediate = DecryptAes(encryptedData, key, iv);
-
-            // アナグラム処理
-            decryptedIntermediate = AnagramHelper.AnagramRestore(decryptedIntermediate);
-
             encryptedData = Convert.FromBase64String(decryptedIntermediate);
         }
 

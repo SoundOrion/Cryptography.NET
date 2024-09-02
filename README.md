@@ -8,7 +8,6 @@
 - **PBKDF2**: パスワードベースのキー導出関数（PBKDF2）を使用してキーを生成します。
 - **HMAC-SHA256/SHA512**: メッセージ認証コード（MAC）を生成し、データの整合性を確認します。
 - **複数パスワードのサポート**: 複数のパスワードでデータを二重暗号化します。
-- **アナグラム処理**: 暗号化中に文字列をアナグラム処理（前半と後半を入れ替え）します。
 
 ## 使用方法
 
@@ -56,14 +55,6 @@ catch (CryptographicException e)
 
 - `Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)`:
   - 暗号化された文字列を複数のパスワードとHMACキーを用いて復号化します。
-
-### `AnagramHelper`
-
-- `AnagramSwap(string input)`:
-  - 文字列をアナグラム処理により変換します（前半と後半を入れ替え）。
-
-- `AnagramRestore(string input)`:
-  - 前半と後半の入れ替えを元に戻します。
 
 ### `HmacHelper`
 
