@@ -6,10 +6,12 @@ namespace Cryptography.NET;
 
 public class AesEncryptionHelper
 {
+    private static readonly HashAlgorithmName[] AllowedHashAlgorithms = { HashAlgorithmName.SHA256, HashAlgorithmName.SHA512 };
+
     /// <summary>
     /// PBKDF2の繰り返し回数
     /// </summary>
-    private const int IterationCount = 10000;
+    private static readonly int IterationCount = 10000;
 
     /// <summary>
     /// 暗号化に使用するソルトのサイズ（バイト単位）。
@@ -33,13 +35,13 @@ public class AesEncryptionHelper
     /// HMAC-SHA256のメッセージ認証コード（MAC）のサイズ（バイト単位）。
     /// HMAC-SHA256は256ビット（32バイト）のMACを生成します。
     /// </summary>
-    private const int HmacSha256Size = 32; // 32バイト (256ビット)
+    private static readonly int HmacSha256Size = 32; // 32バイト (256ビット)
 
     /// <summary>
     /// HMAC-SHA512のメッセージ認証コード（MAC）のサイズ（バイト単位）。
     /// HMAC-SHA512は512ビット（64バイト）のMACを生成します。
     /// </summary>
-    private const int HmacSha512Size = 64; // 64バイト (512ビット)
+    private static readonly int HmacSha512Size = 64; // 64バイト (512ビット)
 
     /// <summary>
     /// 文字列を複数のパスワードとHMACキーを用いて二重暗号化します。
@@ -50,11 +52,7 @@ public class AesEncryptionHelper
     /// <returns>暗号化された文字列（Base64エンコード）。</returns>
     public static string Encrypt(string plainText, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
     {
-        // デフォルト値が指定されていない場合、SHA256を使用
-        if (hashAlgorithm == default)
-        {
-            hashAlgorithm = HashAlgorithmName.SHA256;
-        }
+        hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
 
         byte[] salt = GenerateSalt(SaltSize);
         byte[] iv = GenerateIV(IvSize);
@@ -94,12 +92,8 @@ public class AesEncryptionHelper
     /// <returns>復号化された平文。</returns>
     /// <exception cref="CryptographicException">MAC検証に失敗した場合。</exception>
     public static string Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
-    {        
-        // デフォルト値が指定されていない場合、SHA256を使用
-        if (hashAlgorithm == default)
-        {
-            hashAlgorithm = HashAlgorithmName.SHA256;
-        }
+    {
+        hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
 
         // Base64デコード
         byte[] combinedData = Convert.FromBase64String(cipherTextWithMac);
@@ -176,6 +170,25 @@ public class AesEncryptionHelper
         using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
         using var srDecrypt = new StreamReader(csDecrypt);
         return srDecrypt.ReadToEnd();
+    }
+
+    private static HashAlgorithmName ValidateHashAlgorithm(HashAlgorithmName hashAlgorithm)
+    {
+        // デフォルト値が指定されていない場合、SHA256を使用
+        if (hashAlgorithm == default)
+        {
+            hashAlgorithm = HashAlgorithmName.SHA256;
+        }
+
+        foreach (var allowedAlg in AllowedHashAlgorithms)
+        {
+            if (hashAlgorithm.Equals(allowedAlg))
+            {
+                return hashAlgorithm;
+            }
+        }
+
+        throw new ArgumentException($"Unsupported HashAlgorithmName. Only SHA256 and SHA512 are supported. Provided: {hashAlgorithm.Name}");
     }
 
     /// <summary>
@@ -304,14 +317,15 @@ public class AesEncryptionHelper
     /// <exception cref="ArgumentException">指定されたハッシュアルゴリズムがサポートされていない場合。</exception>
     private static int GetMacSize(string hmacKey, HashAlgorithmName hashAlgorithm)
     {
-        // HMACキーが空でない場合、MACのサイズを考慮する
         if (string.IsNullOrWhiteSpace(hmacKey))
-            return 0;
-
-        return hashAlgorithm.ToString().ToUpper() switch
         {
-            "SHA256" => HmacSha256Size,
-            "SHA512" => HmacSha512Size,
+            return 0;
+        }
+
+        return hashAlgorithm switch
+        {
+            var alg when alg == HashAlgorithmName.SHA256 => HmacSha256Size,
+            var alg when alg == HashAlgorithmName.SHA512 => HmacSha512Size,
             _ => throw new ArgumentException("Unsupported HMAC algorithm specified.")
         };
     }

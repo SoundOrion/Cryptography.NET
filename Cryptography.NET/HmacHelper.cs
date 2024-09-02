@@ -53,10 +53,10 @@ internal static class HmacHelper
     /// <exception cref="ArgumentException">無効なアルゴリズムが指定された場合。</exception>
     private static HMAC CreateHmacAlgorithm(HashAlgorithmName hashAlgorithm, string key)
     {
-        return hashAlgorithm.ToString().ToUpper() switch
+        return hashAlgorithm switch
         {
-            "SHA256" => new HMACSHA256(Encoding.UTF8.GetBytes(key)),
-            "SHA512" => new HMACSHA512(Encoding.UTF8.GetBytes(key)),
+            var alg when alg == HashAlgorithmName.SHA256 => new HMACSHA256(Encoding.UTF8.GetBytes(key)),
+            var alg when alg == HashAlgorithmName.SHA512 => new HMACSHA512(Encoding.UTF8.GetBytes(key)),
             _ => throw new ArgumentException("Unsupported HMAC algorithm specified.")
         };
     }

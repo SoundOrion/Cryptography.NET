@@ -5,9 +5,9 @@ namespace Cryptography.NET.Tests;
 [TestClass]
 public class AesEncryptionHelperTests
 {
-    private readonly string[] passwordsMultiple = { "secure_password_1", "secure_password_2", "secure_password_3", "secure_password_4" };
-    private readonly string[] passwordsSingle = { "secure_password_1" };
-    private readonly string hmacKey = "my_hmac_key";
+    //private readonly string[] passwordsMultiple = { "secure_password_1", "secure_password_2", "secure_password_3", "secure_password_4" };
+    //private readonly string[] passwordsSingle = { "secure_password_1" };
+    //private readonly string hmacKey = "my_hmac_key";
 
     /// <summary>
     /// 暗号化および復号化が元のテキストを正しく戻すことを確認するテスト。
@@ -60,5 +60,39 @@ public class AesEncryptionHelperTests
 
         // 復号化を試みるが、CryptographicExceptionが発生するはず
         AesEncryptionHelper.Decrypt(tamperedEncryptedText, passwords, hmacKey);
+    }
+
+    /// <summary>
+    /// SHA256またはSHA512以外のハッシュアルゴリズムが指定された場合にArgumentExceptionがスローされることを確認するテスト。
+    /// </summary>
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void Encrypt_WithUnsupportedHashAlgorithm_ShouldThrowArgumentException()
+    {
+        // Arrange
+        string originalText = "This is a secret message!";
+        string[] passwords = { "password1" };
+        string hmacKey = "hmacKey";
+        var unsupportedAlgorithm = new HashAlgorithmName("MD5"); // MD5は許可されていない
+
+        // Act
+        AesEncryptionHelper.Encrypt(originalText, passwords, hmacKey, unsupportedAlgorithm);
+    }
+
+    /// <summary>
+    /// SHA256またはSHA512以外のハッシュアルゴリズムが指定された場合にArgumentExceptionがスローされることを確認するテスト。
+    /// </summary>
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentException))]
+    public void Decrypt_WithUnsupportedHashAlgorithm_ShouldThrowArgumentException()
+    {
+        // Arrange
+        string encryptedText = "This is a secret message!";
+        string[] passwords = { "password1" };
+        string hmacKey = "hmacKey";
+        var unsupportedAlgorithm = new HashAlgorithmName("MD5"); // MD5は許可されていない
+
+        // Act
+        AesEncryptionHelper.Decrypt(encryptedText, passwords, hmacKey, unsupportedAlgorithm);
     }
 }
