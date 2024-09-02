@@ -181,19 +181,16 @@ public class AesEncryptionHelper
     /// <exception cref="ArgumentException">サポートされていないハッシュアルゴリズムが指定された場合。</exception>
     private static HashAlgorithmName ValidateHashAlgorithm(HashAlgorithmName hashAlgorithm)
     {
-        if (hashAlgorithm == default)
+        // デフォルト値の設定
+        hashAlgorithm = hashAlgorithm == default ? HashAlgorithmName.SHA256 : hashAlgorithm;
+
+        // 許可されたハッシュアルゴリズムのチェック
+        if (AllowedHashAlgorithms.Any(allowedAlg => allowedAlg.Equals(hashAlgorithm)))
         {
-            hashAlgorithm = HashAlgorithmName.SHA256;
+            return hashAlgorithm;
         }
 
-        foreach (var allowedAlg in AllowedHashAlgorithms)
-        {
-            if (hashAlgorithm.Equals(allowedAlg))
-            {
-                return hashAlgorithm;
-            }
-        }
-
+        // サポートされていないハッシュアルゴリズムの場合は例外をスロー
         throw new ArgumentException($"Unsupported HashAlgorithmName. Only SHA256 and SHA512 are supported. Provided: {hashAlgorithm.Name}");
     }
 
@@ -206,12 +203,7 @@ public class AesEncryptionHelper
     /// <returns>導出されたキー。</returns>
     private static byte[] DeriveKey(string password, byte[] salt, HashAlgorithmName hashAlgorithm)
     {
-        return Rfc2898DeriveBytes.Pbkdf2(
-            password,
-            salt,
-            IterationCount,
-            hashAlgorithm,
-            KeySize);
+        return Rfc2898DeriveBytes.Pbkdf2(password, salt, IterationCount, hashAlgorithm, KeySize);
     }
 
     /// <summary>
