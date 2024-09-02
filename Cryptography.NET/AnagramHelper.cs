@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Cryptography.NET;
 
+/// <summary>
+/// 文字列のアナグラム処理および復元のためのヘルパークラス。
+/// </summary>
 internal static class AnagramHelper
 {
     /// <summary>
@@ -13,6 +12,7 @@ internal static class AnagramHelper
     /// </summary>
     /// <param name="input">処理対象の文字列。</param>
     /// <returns>アナグラム処理後の文字列。</returns>
+    /// <exception cref="ArgumentNullException">入力文字列がnullの場合にスローされます。</exception>
     public static string AnagramSwap(string input)
     {
         ArgumentNullException.ThrowIfNull(input, "入力文字列はnullであってはなりません。");
@@ -29,6 +29,6 @@ internal static class AnagramHelper
     /// </summary>
     /// <param name="input">アナグラム処理された文字列。</param>
     /// <returns>元の文字列。</returns>
+    /// <exception cref="ArgumentNullException">入力文字列がnullの場合にスローされます。</exception>
     public static string AnagramRestore(string input) => AnagramSwap(input);
 }
-
