@@ -60,6 +60,9 @@ public class AesEncryptionHelper
     /// <exception cref="ArgumentException">サポートされていないハッシュアルゴリズムが指定された場合。</exception>
     public static string Encrypt(string plainText, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
     {
+        if (string.IsNullOrEmpty(plainText)) throw new ArgumentException("PlainText cannot be null or empty.");
+        if (passwords == null || passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
+
         hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
 
         byte[] salt = GenerateSalt(SaltSize);
@@ -98,6 +101,9 @@ public class AesEncryptionHelper
     /// <exception cref="CryptographicException">MAC検証に失敗した場合。</exception>
     public static string Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
     {
+        if (string.IsNullOrEmpty(cipherTextWithMac)) throw new ArgumentException("CipherText cannot be null or empty.");
+        if (passwords == null || passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
+
         hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
 
         // Base64デコード
