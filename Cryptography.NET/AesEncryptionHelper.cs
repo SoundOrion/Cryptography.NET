@@ -185,7 +185,7 @@ public class AesEncryptionHelper
         hashAlgorithm = hashAlgorithm == default ? HashAlgorithmName.SHA256 : hashAlgorithm;
 
         // 許可されたハッシュアルゴリズムのチェック
-        if (AllowedHashAlgorithms.Any(allowedAlg => allowedAlg.Equals(hashAlgorithm)))
+        if (AllowedHashAlgorithms.Contains(hashAlgorithm))
         {
             return hashAlgorithm;
         }
