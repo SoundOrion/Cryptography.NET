@@ -4,7 +4,7 @@ using Cryptography.NET.Algorithm;
 namespace Cryptography.NET.Tests;
 
 [TestClass]
-public class AesEncryptionHelperTests
+public class AesCbcEncryptionHelperTests
 {
     //private readonly string[] passwordsMultiple = { "secure_password_1", "secure_password_2", "secure_password_3", "secure_password_4" };
     //private readonly string[] passwordsSingle = { "secure_password_1" };

@@ -1,10 +1,7 @@
 ﻿using Cryptography.NET.Helper;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
+using Cryptography.NET.Common;
 
 namespace Cryptography.NET;
 
@@ -19,7 +16,7 @@ public class EncryptionAlgorithmFactory
         return algorithm switch
         {
             EncryptionSettings.EncryptionAlgorithm.AesCbc => new AesCbcEncryption(passwords, hmacKey, hashAlgorithm),
-            //EncryptionSettings.EncryptionAlgorithm.AesGcm => new AesGcmEncryption(),
+            EncryptionSettings.EncryptionAlgorithm.AesGcm => new AesGcmEncryption(passwords, hashAlgorithm),
             _ => throw new NotSupportedException("指定された暗号化アルゴリズムはサポートされていません。"),
         };
     }

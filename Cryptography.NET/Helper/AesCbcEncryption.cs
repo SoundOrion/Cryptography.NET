@@ -1,6 +1,5 @@
-﻿using System;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System.Security.Cryptography;
+using Cryptography.NET.Common;
 
 namespace Cryptography.NET.Helper;
 
@@ -9,6 +8,46 @@ namespace Cryptography.NET.Helper;
 /// </summary>
 public class AesCbcEncryption : IEncryptionAlgorithm
 {
+    /// <summary>
+    /// サポートされているハッシュアルゴリズム。
+    /// </summary>
+    public static readonly HashAlgorithmName[] AllowedHashAlgorithms = { HashAlgorithmName.SHA256, HashAlgorithmName.SHA512 };
+
+    /// <summary>
+    /// PBKDF2の繰り返し回数。
+    /// </summary>
+    public static readonly int IterationCount = 10000;
+
+    /// <summary>
+    /// 暗号化に使用するソルトのサイズ（バイト単位）。
+    /// 通常、16バイトのソルトを使用して暗号化キーを強化します。
+    /// </summary>
+    public static readonly int SaltSize = 16;
+
+    /// <summary>
+    /// AES暗号化に使用する初期化ベクター（IV）のサイズ（バイト単位）。
+    /// AES-128およびAES-256の標準的なIVサイズは16バイトです。
+    /// </summary>
+    public static readonly int IvSize = 16;
+
+    /// <summary>
+    /// AES暗号化で使用するキーのサイズ（バイト単位）。
+    /// ここでは256ビットのキー（32バイト）を使用しています。
+    /// </summary>
+    public static readonly int KeySize = 32;
+
+    /// <summary>
+    /// HMAC-SHA256のメッセージ認証コード（MAC）のサイズ（バイト単位）。
+    /// HMAC-SHA256は256ビット（32バイト）のMACを生成します。
+    /// </summary>
+    public static readonly int HmacSha256Size = 32;
+
+    /// <summary>
+    /// HMAC-SHA512のメッセージ認証コード（MAC）のサイズ（バイト単位）。
+    /// HMAC-SHA512は512ビット（64バイト）のMACを生成します。
+    /// </summary>
+    public static readonly int HmacSha512Size = 64;
+
     private readonly string[] _passwords;
     private readonly string _hmacKey;
     private readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
@@ -34,8 +73,8 @@ public class AesCbcEncryption : IEncryptionAlgorithm
         if (string.IsNullOrEmpty(plainText)) throw new ArgumentException("PlainText cannot be null or empty.");
         if (_passwords == null || _passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
 
-        byte[] salt = GenerateSalt(EncryptionSettings.SaltSize);
-        byte[] iv = GenerateIV(EncryptionSettings.IvSize);
+        byte[] salt = EncryptionUtility.GenerateSalt(SaltSize);
+        byte[] iv = EncryptionUtility.GenerateIV(IvSize);
 
         // 最初のラウンドの暗号化
         byte[] key1 = DeriveKey(_passwords[0], salt, _hashAlgorithm);
@@ -158,7 +197,7 @@ public class AesCbcEncryption : IEncryptionAlgorithm
         hashAlgorithm = hashAlgorithm == default ? HashAlgorithmName.SHA256 : hashAlgorithm;
 
         // 許可されたハッシュアルゴリズムのチェック
-        if (EncryptionSettings.AllowedHashAlgorithms.Contains(hashAlgorithm))
+        if (AllowedHashAlgorithms.Contains(hashAlgorithm))
         {
             return hashAlgorithm;
         }
@@ -176,27 +215,7 @@ public class AesCbcEncryption : IEncryptionAlgorithm
     /// <returns>導出されたキー。</returns>
     private static byte[] DeriveKey(string password, byte[] salt, HashAlgorithmName hashAlgorithm)
     {
-        return Rfc2898DeriveBytes.Pbkdf2(password, salt, EncryptionSettings.IterationCount, hashAlgorithm, EncryptionSettings.KeySize);
-    }
-
-    /// <summary>
-    /// 指定されたサイズのソルトを生成します。
-    /// </summary>
-    /// <param name="size">ソルトのサイズ（バイト単位）。</param>
-    /// <returns>生成されたソルト。</returns>
-    private static byte[] GenerateSalt(int size)
-    {
-        return RandomNumberGenerator.GetBytes(size);
-    }
-
-    /// <summary>
-    /// 指定されたサイズの初期化ベクター（IV）を生成します。
-    /// </summary>
-    /// <param name="size">IVのサイズ（バイト単位）。</param>
-    /// <returns>生成されたIV。</returns>
-    private static byte[] GenerateIV(int size)
-    {
-        return RandomNumberGenerator.GetBytes(size);
+        return Rfc2898DeriveBytes.Pbkdf2(password, salt, IterationCount, hashAlgorithm, KeySize);
     }
 
     /// <summary>
@@ -237,8 +256,8 @@ public class AesCbcEncryption : IEncryptionAlgorithm
     /// <returns>抽出されたソルト。</returns>
     private static byte[] ExtractSalt(byte[] combinedData)
     {
-        byte[] salt = new byte[EncryptionSettings.SaltSize];
-        Buffer.BlockCopy(combinedData, 0, salt, 0, EncryptionSettings.SaltSize);
+        byte[] salt = new byte[SaltSize];
+        Buffer.BlockCopy(combinedData, 0, salt, 0, SaltSize);
         return salt;
     }
 
@@ -249,8 +268,8 @@ public class AesCbcEncryption : IEncryptionAlgorithm
     /// <returns>抽出されたIV。</returns>
     private static byte[] ExtractIv(byte[] combinedData)
     {
-        byte[] iv = new byte[EncryptionSettings.IvSize];
-        Buffer.BlockCopy(combinedData, EncryptionSettings.SaltSize, iv, 0, EncryptionSettings.IvSize);
+        byte[] iv = new byte[IvSize];
+        Buffer.BlockCopy(combinedData, SaltSize, iv, 0, IvSize);
         return iv;
     }
 
@@ -264,8 +283,8 @@ public class AesCbcEncryption : IEncryptionAlgorithm
     private static byte[] ExtractEncryptedData(byte[] combinedData, string hmacKey, HashAlgorithmName hashAlgorithm)
     {
         int macSize = GetMacSize(hmacKey, hashAlgorithm);
-        byte[] data = new byte[combinedData.Length - EncryptionSettings.SaltSize - EncryptionSettings.IvSize - macSize];
-        Buffer.BlockCopy(combinedData, EncryptionSettings.SaltSize + EncryptionSettings.IvSize, data, 0, data.Length);
+        byte[] data = new byte[combinedData.Length - SaltSize - IvSize - macSize];
+        Buffer.BlockCopy(combinedData, SaltSize + IvSize, data, 0, data.Length);
         return data;
     }
 
@@ -300,8 +319,8 @@ public class AesCbcEncryption : IEncryptionAlgorithm
 
         return hashAlgorithm switch
         {
-            var alg when alg == HashAlgorithmName.SHA256 => EncryptionSettings.HmacSha256Size,
-            var alg when alg == HashAlgorithmName.SHA512 => EncryptionSettings.HmacSha512Size,
+            var alg when alg == HashAlgorithmName.SHA256 => HmacSha256Size,
+            var alg when alg == HashAlgorithmName.SHA512 => HmacSha512Size,
             _ => throw new ArgumentException("Unsupported HMAC algorithm specified.")
         };
     }

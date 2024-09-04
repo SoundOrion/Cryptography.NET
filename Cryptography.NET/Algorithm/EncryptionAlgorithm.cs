@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using Cryptography.NET.Helper;
+using Cryptography.NET.Common;
 
 namespace Cryptography.NET.Algorithm;
 
