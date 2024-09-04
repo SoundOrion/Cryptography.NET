@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Cryptography.NET.Algorithm;
 
 namespace Cryptography.NET.Tests;
 
@@ -27,13 +28,13 @@ public class AesEncryptionHelperTests
         string[] passwords = passwordList.Split(';');
 
         // SHA256
-        string encryptedTextSha256 = AesEncryptionHelper.Encrypt(originalText, passwords, hmacKey, HashAlgorithmName.SHA256);
-        string decryptedTextSha256 = AesEncryptionHelper.Decrypt(encryptedTextSha256, passwords, hmacKey, HashAlgorithmName.SHA256);
+        string encryptedTextSha256 = EncryptionAlgorithm.Encrypt(originalText, passwords, hmacKey, HashAlgorithmName.SHA256);
+        string decryptedTextSha256 = EncryptionAlgorithm.Decrypt(encryptedTextSha256, passwords, hmacKey, HashAlgorithmName.SHA256);
         Assert.AreEqual(originalText, decryptedTextSha256, "Decrypted text should match the original plain text when using SHA256.");
 
         // SHA512
-        string encryptedTextSha512 = AesEncryptionHelper.Encrypt(originalText, passwords, hmacKey, HashAlgorithmName.SHA512);
-        string decryptedTextSha512 = AesEncryptionHelper.Decrypt(encryptedTextSha512, passwords, hmacKey, HashAlgorithmName.SHA512);
+        string encryptedTextSha512 = EncryptionAlgorithm.Encrypt(originalText, passwords, hmacKey, HashAlgorithmName.SHA512);
+        string decryptedTextSha512 = EncryptionAlgorithm.Decrypt(encryptedTextSha512, passwords, hmacKey, HashAlgorithmName.SHA512);
         Assert.AreEqual(originalText, decryptedTextSha512, "Decrypted text should match the original plain text when using SHA512.");
     }
 
@@ -50,7 +51,7 @@ public class AesEncryptionHelperTests
         string hmacKey = "hmacKey";
 
         // 正しいデータを暗号化
-        string encryptedText = AesEncryptionHelper.Encrypt(originalText, passwords, hmacKey);
+        string encryptedText = EncryptionAlgorithm.Encrypt(originalText, passwords, hmacKey);
         Assert.IsNotNull(encryptedText, "Encrypted text should not be null.");
 
         // 暗号化データを変更して復号化しようとする
@@ -59,7 +60,7 @@ public class AesEncryptionHelperTests
         string tamperedEncryptedText = Convert.ToBase64String(tamperedData);
 
         // 復号化を試みるが、CryptographicExceptionが発生するはず
-        AesEncryptionHelper.Decrypt(tamperedEncryptedText, passwords, hmacKey);
+        EncryptionAlgorithm.Decrypt(tamperedEncryptedText, passwords, hmacKey);
     }
 
     /// <summary>
@@ -76,7 +77,7 @@ public class AesEncryptionHelperTests
         var unsupportedAlgorithm = new HashAlgorithmName("MD5"); // MD5は許可されていない
 
         // Act
-        AesEncryptionHelper.Encrypt(originalText, passwords, hmacKey, unsupportedAlgorithm);
+        EncryptionAlgorithm.Encrypt(originalText, passwords, hmacKey, unsupportedAlgorithm);
     }
 
     /// <summary>
@@ -93,6 +94,6 @@ public class AesEncryptionHelperTests
         var unsupportedAlgorithm = new HashAlgorithmName("MD5"); // MD5は許可されていない
 
         // Act
-        AesEncryptionHelper.Decrypt(encryptedText, passwords, hmacKey, unsupportedAlgorithm);
+        EncryptionAlgorithm.Decrypt(encryptedText, passwords, hmacKey, unsupportedAlgorithm);
     }
 }

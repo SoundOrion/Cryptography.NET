@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Cryptography.NET;
+namespace Cryptography.NET.Helper;
 
 internal static class HmacHelper
 {

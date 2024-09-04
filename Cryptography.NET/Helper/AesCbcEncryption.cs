@@ -2,52 +2,23 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Cryptography.NET;
+namespace Cryptography.NET.Helper;
 
 /// <summary>
 /// AES暗号化および復号化のためのヘルパークラス。
 /// </summary>
-public class AesEncryptionHelper
+public class AesCbcEncryption : IEncryptionAlgorithm
 {
-    /// <summary>
-    /// サポートされているハッシュアルゴリズム。
-    /// </summary>
-    private static readonly HashAlgorithmName[] AllowedHashAlgorithms = { HashAlgorithmName.SHA256, HashAlgorithmName.SHA512 };
+    private readonly string[] _passwords;
+    private readonly string _hmacKey;
+    private readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
 
-    /// <summary>
-    /// PBKDF2の繰り返し回数。
-    /// </summary>
-    private static readonly int IterationCount = 10000;
-
-    /// <summary>
-    /// 暗号化に使用するソルトのサイズ（バイト単位）。
-    /// 通常、16バイトのソルトを使用して暗号化キーを強化します。
-    /// </summary>
-    private static readonly int SaltSize = 16;
-
-    /// <summary>
-    /// AES暗号化に使用する初期化ベクター（IV）のサイズ（バイト単位）。
-    /// AES-128およびAES-256の標準的なIVサイズは16バイトです。
-    /// </summary>
-    private static readonly int IvSize = 16;
-
-    /// <summary>
-    /// AES暗号化で使用するキーのサイズ（バイト単位）。
-    /// ここでは256ビットのキー（32バイト）を使用しています。
-    /// </summary>
-    private static readonly int KeySize = 32;
-
-    /// <summary>
-    /// HMAC-SHA256のメッセージ認証コード（MAC）のサイズ（バイト単位）。
-    /// HMAC-SHA256は256ビット（32バイト）のMACを生成します。
-    /// </summary>
-    private static readonly int HmacSha256Size = 32;
-
-    /// <summary>
-    /// HMAC-SHA512のメッセージ認証コード（MAC）のサイズ（バイト単位）。
-    /// HMAC-SHA512は512ビット（64バイト）のMACを生成します。
-    /// </summary>
-    private static readonly int HmacSha512Size = 64;
+    public AesCbcEncryption(string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
+    {
+        _passwords = passwords;
+        _hmacKey = hmacKey;
+        _hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
+    }
 
     /// <summary>
     /// 文字列を複数のパスワードとHMACキーを用いて二重暗号化します。
@@ -58,33 +29,31 @@ public class AesEncryptionHelper
     /// <param name="hashAlgorithm">ハッシュアルゴリズム（SHA256またはSHA512）。</param>
     /// <returns>暗号化された文字列（Base64エンコード）。</returns>
     /// <exception cref="ArgumentException">サポートされていないハッシュアルゴリズムが指定された場合。</exception>
-    public static string Encrypt(string plainText, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
+    public string Encrypt(string plainText)
     {
         if (string.IsNullOrEmpty(plainText)) throw new ArgumentException("PlainText cannot be null or empty.");
-        if (passwords == null || passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
+        if (_passwords == null || _passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
 
-        hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
-
-        byte[] salt = GenerateSalt(SaltSize);
-        byte[] iv = GenerateIV(IvSize);
+        byte[] salt = GenerateSalt(EncryptionSettings.SaltSize);
+        byte[] iv = GenerateIV(EncryptionSettings.IvSize);
 
         // 最初のラウンドの暗号化
-        byte[] key1 = DeriveKey(passwords[0], salt, hashAlgorithm);
+        byte[] key1 = DeriveKey(_passwords[0], salt, _hashAlgorithm);
         var encryptedData = EncryptAes(plainText, key1, iv);
 
         // 二番目のラウンド以降の暗号化
-        for (int i = 1; i < passwords.Length; i++)
+        for (int i = 1; i < _passwords.Length; i++)
         {
             var encryptedText = Convert.ToBase64String(encryptedData);
-            byte[] key = DeriveKey(passwords[i], salt, hashAlgorithm);
+            byte[] key = DeriveKey(_passwords[i], salt, _hashAlgorithm);
             encryptedData = EncryptAes(encryptedText, key, iv);
         }
 
         // MAC生成
-        byte[] mac = HmacHelper.GenerateHmac(encryptedData, hmacKey, hashAlgorithm);
+        byte[] mac = HmacHelper.GenerateHmac(encryptedData, _hmacKey, _hashAlgorithm);
 
         // Salt、IV、暗号化データ、MACを結合
-        byte[] combinedData = CombineData(salt, iv, encryptedData, mac, hmacKey);
+        byte[] combinedData = CombineData(salt, iv, encryptedData, mac, _hmacKey);
 
         // Base64エンコードして返す
         return Convert.ToBase64String(combinedData);
@@ -99,12 +68,10 @@ public class AesEncryptionHelper
     /// <param name="hashAlgorithm">ハッシュアルゴリズム（SHA256またはSHA512）。</param>
     /// <returns>復号化された平文。</returns>
     /// <exception cref="CryptographicException">MAC検証に失敗した場合。</exception>
-    public static string Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)
+    public string Decrypt(string cipherTextWithMac)
     {
         if (string.IsNullOrEmpty(cipherTextWithMac)) throw new ArgumentException("CipherText cannot be null or empty.");
-        if (passwords == null || passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
-
-        hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
+        if (_passwords == null || _passwords.Length == 0) throw new ArgumentException("Passwords array cannot be null or empty.");
 
         // Base64デコード
         byte[] combinedData = Convert.FromBase64String(cipherTextWithMac);
@@ -112,26 +79,26 @@ public class AesEncryptionHelper
         // Salt、IV、暗号化データ、MACを抽出
         byte[] salt = ExtractSalt(combinedData);
         byte[] iv = ExtractIv(combinedData);
-        byte[] encryptedData = ExtractEncryptedData(combinedData, hmacKey, hashAlgorithm);
-        byte[] mac = ExtractMac(combinedData, hmacKey, hashAlgorithm);
+        byte[] encryptedData = ExtractEncryptedData(combinedData, _hmacKey, _hashAlgorithm);
+        byte[] mac = ExtractMac(combinedData, _hmacKey, _hashAlgorithm);
 
         // MAC検証
-        if (!HmacHelper.VerifyHmac(encryptedData, mac, hmacKey, hashAlgorithm))
+        if (!HmacHelper.VerifyHmac(encryptedData, mac, _hmacKey, _hashAlgorithm))
         {
             throw new CryptographicException("データの整合性が確認できません。");
         }
 
         // 復号化（最後のラウンドから順に解く）
-        for (int i = passwords.Length - 1; i >= 1; i--)
+        for (int i = _passwords.Length - 1; i >= 1; i--)
         {
-            var password = passwords[i];
-            byte[] key = DeriveKey(password, salt, hashAlgorithm);
+            var password = _passwords[i];
+            byte[] key = DeriveKey(password, salt, _hashAlgorithm);
             string decryptedIntermediate = DecryptAes(encryptedData, key, iv);
             encryptedData = Convert.FromBase64String(decryptedIntermediate);
         }
 
         // 最終的な平文を返す
-        string decryptedText = DecryptAes(encryptedData, DeriveKey(passwords[0], salt, hashAlgorithm), iv);
+        string decryptedText = DecryptAes(encryptedData, DeriveKey(_passwords[0], salt, _hashAlgorithm), iv);
         return decryptedText;
     }
 
@@ -191,7 +158,7 @@ public class AesEncryptionHelper
         hashAlgorithm = hashAlgorithm == default ? HashAlgorithmName.SHA256 : hashAlgorithm;
 
         // 許可されたハッシュアルゴリズムのチェック
-        if (AllowedHashAlgorithms.Contains(hashAlgorithm))
+        if (EncryptionSettings.AllowedHashAlgorithms.Contains(hashAlgorithm))
         {
             return hashAlgorithm;
         }
@@ -209,7 +176,7 @@ public class AesEncryptionHelper
     /// <returns>導出されたキー。</returns>
     private static byte[] DeriveKey(string password, byte[] salt, HashAlgorithmName hashAlgorithm)
     {
-        return Rfc2898DeriveBytes.Pbkdf2(password, salt, IterationCount, hashAlgorithm, KeySize);
+        return Rfc2898DeriveBytes.Pbkdf2(password, salt, EncryptionSettings.IterationCount, hashAlgorithm, EncryptionSettings.KeySize);
     }
 
     /// <summary>
@@ -270,8 +237,8 @@ public class AesEncryptionHelper
     /// <returns>抽出されたソルト。</returns>
     private static byte[] ExtractSalt(byte[] combinedData)
     {
-        byte[] salt = new byte[SaltSize];
-        Buffer.BlockCopy(combinedData, 0, salt, 0, SaltSize);
+        byte[] salt = new byte[EncryptionSettings.SaltSize];
+        Buffer.BlockCopy(combinedData, 0, salt, 0, EncryptionSettings.SaltSize);
         return salt;
     }
 
@@ -282,8 +249,8 @@ public class AesEncryptionHelper
     /// <returns>抽出されたIV。</returns>
     private static byte[] ExtractIv(byte[] combinedData)
     {
-        byte[] iv = new byte[IvSize];
-        Buffer.BlockCopy(combinedData, SaltSize, iv, 0, IvSize);
+        byte[] iv = new byte[EncryptionSettings.IvSize];
+        Buffer.BlockCopy(combinedData, EncryptionSettings.SaltSize, iv, 0, EncryptionSettings.IvSize);
         return iv;
     }
 
@@ -297,8 +264,8 @@ public class AesEncryptionHelper
     private static byte[] ExtractEncryptedData(byte[] combinedData, string hmacKey, HashAlgorithmName hashAlgorithm)
     {
         int macSize = GetMacSize(hmacKey, hashAlgorithm);
-        byte[] data = new byte[combinedData.Length - SaltSize - IvSize - macSize];
-        Buffer.BlockCopy(combinedData, SaltSize + IvSize, data, 0, data.Length);
+        byte[] data = new byte[combinedData.Length - EncryptionSettings.SaltSize - EncryptionSettings.IvSize - macSize];
+        Buffer.BlockCopy(combinedData, EncryptionSettings.SaltSize + EncryptionSettings.IvSize, data, 0, data.Length);
         return data;
     }
 
@@ -333,8 +300,8 @@ public class AesEncryptionHelper
 
         return hashAlgorithm switch
         {
-            var alg when alg == HashAlgorithmName.SHA256 => HmacSha256Size,
-            var alg when alg == HashAlgorithmName.SHA512 => HmacSha512Size,
+            var alg when alg == HashAlgorithmName.SHA256 => EncryptionSettings.HmacSha256Size,
+            var alg when alg == HashAlgorithmName.SHA512 => EncryptionSettings.HmacSha512Size,
             _ => throw new ArgumentException("Unsupported HMAC algorithm specified.")
         };
     }

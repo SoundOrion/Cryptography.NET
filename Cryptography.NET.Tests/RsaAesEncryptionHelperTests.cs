@@ -1,7 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Security.Cryptography;
-using Cryptography.NET; // ここで実際の名前空間に合わせて変更
+using Cryptography.NET;
+using Cryptography.NET.Helper; // ここで実際の名前空間に合わせて変更
 
 namespace Cryptography.NET.Tests;
 
@@ -15,7 +16,7 @@ public class RsaAesEncryptionHelperTests
     public void Setup()
     {
         // RSA鍵ペアを生成
-        (_publicKey, _privateKey) = RsaAesEncryptionHelper.GenerateRsaKeyPair();
+        (_publicKey, _privateKey) = RsaAesEncryption.GenerateRsaKeyPair();
     }
 
     [TestMethod]
@@ -25,10 +26,10 @@ public class RsaAesEncryptionHelperTests
         string plainText = "Hello, World!";
 
         // 暗号化
-        string encryptedText = RsaAesEncryptionHelper.Encrypt(plainText, _publicKey);
+        string encryptedText = RsaAesEncryption.Encrypt(plainText, _publicKey);
 
         // 復号化
-        string decryptedText = RsaAesEncryptionHelper.Decrypt(encryptedText, _privateKey);
+        string decryptedText = RsaAesEncryption.Decrypt(encryptedText, _privateKey);
 
         // 結果の確認
         Assert.AreEqual(plainText, decryptedText, "復号化されたテキストが元の平文と一致しません。");
@@ -38,7 +39,7 @@ public class RsaAesEncryptionHelperTests
     public void TestGenerateRsaKeyPair()
     {
         // 鍵ペアの生成
-        var (publicKey, privateKey) = RsaAesEncryptionHelper.GenerateRsaKeyPair();
+        var (publicKey, privateKey) = RsaAesEncryption.GenerateRsaKeyPair();
 
         // 鍵のチェック
         Assert.IsNotNull(publicKey.Modulus, "公開鍵のモジュラスがnullです。");

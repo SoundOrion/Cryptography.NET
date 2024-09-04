@@ -3,12 +3,12 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Cryptography.NET;
+namespace Cryptography.NET.Helper;
 
 /// <summary>
 /// RSAおよびAES暗号化のためのヘルパークラス。
 /// </summary>
-public class RsaAesEncryptionHelper
+public class RsaAesEncryption
 {
     /// <summary>
     /// RSA暗号化用の公開鍵と秘密鍵のペアを生成します。
