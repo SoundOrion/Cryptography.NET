@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace Cryptography.NET.Helper;
 
+/// <summary>
+/// AES-GCM（Galois/Counter Mode）暗号化を提供するクラスです。
+/// </summary>
 public class AesGcmEncryption : IEncryptionAlgorithm
 {
     /// <summary>
@@ -27,7 +30,7 @@ public class AesGcmEncryption : IEncryptionAlgorithm
     public static readonly int SaltSize = 16;
 
     /// <summary>
-    /// 通常12バイト（96ビット）のランダムな初期化ベクトルが使われます
+    /// 初期化ベクトル（IV）のサイズ（バイト単位）。AES-GCMでは12バイトが推奨されます。
     /// </summary>
     public static readonly int IvSize = 12;
 
@@ -42,12 +45,22 @@ public class AesGcmEncryption : IEncryptionAlgorithm
     private readonly string[] _passwords;
     private readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
 
+    /// <summary>
+    /// コンストラクタ。パスワードとハッシュアルゴリズムを指定してAES-GCM暗号化のインスタンスを作成します。
+    /// </summary>
+    /// <param name="passwords">キー導出に使用するパスワード。</param>
+    /// <param name="hashAlgorithm">ハッシュアルゴリズム（SHA256がデフォルト）。</param>
     public AesGcmEncryption(string[] passwords, HashAlgorithmName hashAlgorithm = default)
     {
         _passwords = passwords;
         _hashAlgorithm = ValidateHashAlgorithm(hashAlgorithm);
     }
 
+    /// <summary>
+    /// 平文をAES-GCMを使用して暗号化します。
+    /// </summary>
+    /// <param name="plainText">暗号化するテキスト。</param>
+    /// <returns>暗号化されたテキストをBase64形式で返します。</returns>
     public string Encrypt(string plainText)
     {
         byte[] salt = EncryptionUtility.GenerateSalt(SaltSize);
@@ -62,9 +75,14 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return Convert.ToBase64String(CombineData(salt, iv, encryptedData, tag));
     }
 
-    public string Decrypt(string cipherTextWithMac)
+    /// <summary>
+    /// 暗号化されたテキストをAES-GCMを使用して復号化します。
+    /// </summary>
+    /// <param name="cipherText">暗号化されたテキスト。</param>
+    /// <returns>復号化されたテキスト。</returns>
+    public string Decrypt(string cipherText)
     {
-        byte[] combinedData = Convert.FromBase64String(cipherTextWithMac);
+        byte[] combinedData = Convert.FromBase64String(cipherText);
         byte[] salt = ExtractSalt(combinedData);
         byte[] iv = ExtractIv(combinedData);
         byte[] encryptedData = ExtractEncryptedData(combinedData);
@@ -74,6 +92,14 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return decryptedText;
     }
 
+    /// <summary>
+    /// AES-GCMを使用してデータを暗号化します。
+    /// </summary>
+    /// <param name="plainText">暗号化するテキスト。</param>
+    /// <param name="key">暗号化に使用する鍵。</param>
+    /// <param name="iv">初期化ベクトル。</param>
+    /// <param name="tag">暗号化されたデータの認証タグ。</param>
+    /// <returns>暗号化されたデータ。</returns>
     private static byte[] EncryptAesGcm(string plainText, byte[] key, byte[] iv, out byte[] tag)
     {
 #if NET6_0
@@ -98,6 +124,14 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return cipherBytes;
     }
 
+    /// <summary>
+    /// AES-GCMを使用してデータを復号化します。
+    /// </summary>
+    /// <param name="cipherBytes">暗号化されたデータ。</param>
+    /// <param name="key">復号化に使用する鍵。</param>
+    /// <param name="iv">初期化ベクトル。</param>
+    /// <param name="tag">認証タグ。</param>
+    /// <returns>復号化されたテキスト。</returns>
     private static string DecryptAesGcm(byte[] cipherBytes, byte[] key, byte[] iv, byte[] tag)
     {
 #if NET6_0
@@ -146,6 +180,14 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return Rfc2898DeriveBytes.Pbkdf2(password, salt, IterationCount, hashAlgorithm, KeySize);
     }
 
+    /// <summary>
+    /// 暗号化データ、ソルト、IV、認証タグを1つのバイト配列に結合します。
+    /// </summary>
+    /// <param name="salt">ソルト。</param>
+    /// <param name="iv">初期化ベクトル。</param>
+    /// <param name="encryptedData">暗号化されたデータ。</param>
+    /// <param name="tag">認証タグ。</param>
+    /// <returns>結合されたバイト配列。</returns>
     private static byte[] CombineData(byte[] salt, byte[] iv, byte[] encryptedData, byte[] tag)
     {
         byte[] result = new byte[salt.Length + iv.Length + encryptedData.Length + tag.Length];
@@ -189,6 +231,11 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return iv;
     }
 
+    /// <summary>
+    /// 結合されたバイト配列から暗号化データを抽出します。
+    /// </summary>
+    /// <param name="combinedData">結合されたバイト配列。</param>
+    /// <returns>抽出された暗号化データ。</returns>
     private static byte[] ExtractEncryptedData(byte[] combinedData)
     {
         int offset = SaltSize + IvSize;
@@ -196,6 +243,11 @@ public class AesGcmEncryption : IEncryptionAlgorithm
         return combinedData.Skip(offset).Take(encryptedDataLength).ToArray();
     }
 
+    /// <summary>
+    /// 結合されたバイト配列から認証タグを抽出します。
+    /// </summary>
+    /// <param name="combinedData">結合されたバイト配列。</param>
+    /// <returns>抽出された認証タグ。</returns>
     private static byte[] ExtractTag(byte[] combinedData)
     {
         byte[] mac = new byte[AesGcm.TagByteSizes.MaxSize];
