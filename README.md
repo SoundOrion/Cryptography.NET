@@ -1,6 +1,6 @@
 # Cryptography.NET
 
-`Cryptography.NET`は、安全なデータ暗号化と復号化を提供するC#ライブラリです。このライブラリは、AES（Advanced Encryption Standard）とHMAC（Hash-based Message Authentication Code）を使用して、データの暗号化と整合性検証を行います。AES-CBC（Cipher Block Chaining）およびAES-GCM（Galois/Counter Mode）の2つの暗号化アルゴリズムをサポートしています。
+`Cryptography.NET`は、安全なデータ暗号化と復号化を提供するC#ライブラリです。このライブラリは、AES（Advanced Encryption Standard）とHMAC（Hash-based Message Authentication Code）を使用して、データの暗号化と整合性検証を行います。AES-CBC（Cipher Block Chaining）およびAES-GCM（Galois/Counter Mode）の2つの暗号化アルゴリズムをサポートしています。なお、HMACはデータの整合性を保証するためにAES-CBCモードでのみ使用され、AES-GCMでは組み込みの認証機構を使用するため、HMACは必要ありません。
 
 ## 特徴
 
