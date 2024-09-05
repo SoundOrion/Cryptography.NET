@@ -1,68 +1,89 @@
 # Cryptography.NET
 
-`Cryptography.NET`は、AES暗号化とHMAC-SHA256およびHMAC-SHA512メッセージ認証コードを使用した強力な暗号化および復号化機能を提供するC#ライブラリです。このライブラリは、複数のパスワードによる二重暗号化とMAC（メッセージ認証コード）の検証をサポートしています。
+`Cryptography.NET`は、安全なデータ暗号化と復号化を提供するC#ライブラリです。このライブラリは、AES（Advanced Encryption Standard）とHMAC（Hash-based Message Authentication Code）を使用して、データの暗号化と整合性検証を行います。AES-CBC（Cipher Block Chaining）およびAES-GCM（Galois/Counter Mode）の2つの暗号化アルゴリズムをサポートしています。
 
 ## 特徴
 
-- **AES暗号化**: AES-256を使用してデータを暗号化します。
-- **PBKDF2**: パスワードベースのキー導出関数（PBKDF2）を使用してキーを生成します。
-- **HMAC-SHA256/SHA512**: メッセージ認証コード（MAC）を生成し、データの整合性を確認します。
-- **複数パスワードのサポート**: 複数のパスワードでデータを二重暗号化します。
+- **AES-CBC**: 古典的なブロック暗号モード。
+- **AES-GCM**: より新しいモードで、暗号化と認証を同時に行います。
+- **HMAC**: データの整合性と認証を保証するためのハッシュベースのメッセージ認証コード。CBCモードでのみ使用されます。
 
 ## 使用方法
 
-### 暗号化
+### 初期化
+
+`EncryptionAlgorithm`クラスを使用して、暗号化と復号化を行います。サポートされている暗号化アルゴリズムには、AES-CBCとAES-GCMがあります。
 
 ```csharp
-using Cryptography.NET;
+using Cryptography.NET.Algorithm;
 
-// データを暗号化する例
-string plainText = "This is a secret message.";
 string[] passwords = { "password1", "password2" };
-string hmacKey = "hmac-secret-key";
+string hmacKey = "your-hmac-key";
 
-string encryptedText = AesEncryptionHelper.Encrypt(plainText, passwords, hmacKey);
-Console.WriteLine($"Encrypted: {encryptedText}");
-```
+// AES-CBCで暗号化
+string encryptedText = EncryptionAlgorithm.Encrypt("Hello, World!", passwords, hmacKey, EncryptionSettings.EncryptionAlgorithm.AesCbc);
 
-### 復号化
+// AES-GCMで暗号化
+string encryptedTextGcm = EncryptionAlgorithm.Encrypt("Hello, World!", passwords, hmacKey, EncryptionSettings.EncryptionAlgorithm.AesGcm);
 
-```csharp
-using Cryptography.NET;
+// AES-CBCで復号化
+string decryptedText = EncryptionAlgorithm.Decrypt(encryptedText, passwords, hmacKey, EncryptionSettings.EncryptionAlgorithm.AesCbc);
 
-// データを復号化する例
-string cipherTextWithMac = "Base64EncodedCipherTextWithMac";
-string[] passwords = { "password1", "password2" };
-string hmacKey = "hmac-secret-key";
-
-try
-{
-    string decryptedText = AesEncryptionHelper.Decrypt(cipherTextWithMac, passwords, hmacKey);
-    Console.WriteLine($"Decrypted: {decryptedText}");
-}
-catch (CryptographicException e)
-{
-    Console.WriteLine($"Decryption failed: {e.Message}");
-}
+// AES-GCMで復号化
+string decryptedTextGcm = EncryptionAlgorithm.Decrypt(encryptedTextGcm, passwords, hmacKey, EncryptionSettings.EncryptionAlgorithm.AesGcm);
 ```
 
 ## クラスとメソッド
 
-### `AesEncryptionHelper`
+### `EncryptionAlgorithm`
 
-- `Encrypt(string plainText, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)`:
-  - 平文を複数のパスワードとHMACキーを用いて暗号化します。
+- `string Encrypt(string plainText, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default, EncryptionSettings.EncryptionAlgorithm algorithm = EncryptionSettings.EncryptionAlgorithm.AesCbc)`
+  - 指定された平文を暗号化します。HMACはAES-CBCモードでのみ使用されます。
+  
+- `string Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default, EncryptionSettings.EncryptionAlgorithm algorithm = EncryptionSettings.EncryptionAlgorithm.AesCbc)`
+  - 指定された暗号文を復号化します。HMACはAES-CBCモードでのみ使用されます。
 
-- `Decrypt(string cipherTextWithMac, string[] passwords, string hmacKey, HashAlgorithmName hashAlgorithm = default)`:
-  - 暗号化された文字列を複数のパスワードとHMACキーを用いて復号化します。
+### `EncryptionSettings`
 
-### `HmacHelper`
+- `EncryptionAlgorithm` (列挙型)
+  - `AesCbc` - AES-CBCモード
+  - `AesGcm` - AES-GCMモード
 
-- `GenerateHmac(byte[] data, string hmacKey, HashAlgorithmName hashAlgorithm)`:
-  - 指定されたデータに対してHMACを生成します。
+### `EncryptionUtility`
 
-- `VerifyHmac(byte[] data, byte[] mac, string hmacKey, HashAlgorithmName hashAlgorithm)`:
-  - データのMAC（メッセージ認証コード）を検証します。
+- `byte[] GenerateSalt(int size)`
+  - 指定されたサイズのソルトを生成します。
+
+- `byte[] GenerateIV(int size)`
+  - 指定されたサイズの初期化ベクター（IV）を生成します。
+
+### `AesCbcEncryption`
+
+- AES-CBCモードの暗号化と復号化をサポートします。
+
+### `AesGcmEncryption`
+
+- AES-GCMモードの暗号化と復号化をサポートします。
+
+## 例
+
+```csharp
+// AES-CBC例
+var aesCbc = new AesCbcEncryption(passwords, hmacKey);
+string encryptedTextCbc = aesCbc.Encrypt("Sample text");
+string decryptedTextCbc = aesCbc.Decrypt(encryptedTextCbc);
+
+// AES-GCM例
+var aesGcm = new AesGcmEncryption(passwords);
+string encryptedTextGcm = aesGcm.Encrypt("Sample text");
+string decryptedTextGcm = aesGcm.Decrypt(encryptedTextGcm);
+```
+
+## 注意事項
+
+- パスワードは十分に複雑で長いものを使用してください。
+- HMACキーも適切に管理してください。
+- HMACはAES-CBCモードでのみ使用されることに注意してください。
 
 ## 依存関係
 
