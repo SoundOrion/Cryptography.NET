@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Konscious.Security.Cryptography;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -27,5 +28,19 @@ public static class EncryptionUtility
     public static byte[] GenerateIV(int size)
     {
         return RandomNumberGenerator.GetBytes(size);
+    }
+
+    static byte[] DeriveKey(string password, byte[] salt)
+    {
+        // Argon2を使用してキーを派生
+        var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password))
+        {
+            Salt = salt,
+            DegreeOfParallelism = 8, // 並列度
+            MemorySize = 65536, // メモリ使用量 (KB)
+            Iterations = 4 // 繰り返し回数
+        };
+
+        return argon2.GetBytes(32); // 32バイトのキーを生成
     }
 }
