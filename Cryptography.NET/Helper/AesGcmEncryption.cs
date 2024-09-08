@@ -12,7 +12,7 @@ namespace Cryptography.NET.Helper;
 /// <summary>
 /// AES-GCM（Galois/Counter Mode）暗号化を提供するクラスです。
 /// </summary>
-public class AesGcmEncryption : IEncryptionAlgorithm
+internal class AesGcmEncryption : IEncryptionAlgorithm
 {
     /// <summary>
     /// サポートされているハッシュアルゴリズム。

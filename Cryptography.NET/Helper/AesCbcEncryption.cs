@@ -6,7 +6,7 @@ namespace Cryptography.NET.Helper;
 /// <summary>
 /// AES-CBC暗号化および復号化を提供するクラスです。
 /// </summary>
-public class AesCbcEncryption : IEncryptionAlgorithm
+internal class AesCbcEncryption : IEncryptionAlgorithm
 {
     /// <summary>
     /// サポートされているハッシュアルゴリズム。
